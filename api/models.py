@@ -32,6 +32,7 @@ class CustomUser(AbstractBaseUser, PermissionsMixin):
 
     photo = models.ImageField(upload_to=createFolder, height_field=None, width_field=None, max_length=None, blank=True, null=True)
     email = models.EmailField(unique=True)
+    mobile_number = models.IntegerField(blank=True, null=True)
     first_name = models.CharField(max_length=30, blank=True)
     last_name = models.CharField(max_length=30, blank=True)
     is_active = models.BooleanField(default=True)
@@ -44,5 +45,3 @@ class CustomUser(AbstractBaseUser, PermissionsMixin):
 
     def __str__(self):
         return self.email
-
-    
