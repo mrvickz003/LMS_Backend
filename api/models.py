@@ -1,11 +1,9 @@
 from django.db import models
-from django.conf import settings
 from django.contrib.auth.models import AbstractBaseUser, BaseUserManager, PermissionsMixin
 from django.utils.translation import gettext_lazy as GL
 
 class CustomUserManager(BaseUserManager):
     def create_user(self, email, password=None, **extra_fields):
-        """Create and return a regular user with an email and password."""
         if not email:
             raise ValueError(GL('The Email field must be set'))
         email = self.normalize_email(email)
@@ -15,7 +13,6 @@ class CustomUserManager(BaseUserManager):
         return user
 
     def create_superuser(self, email, password=None, **extra_fields):
-        """Create and return a superuser with an email and password."""
         extra_fields.setdefault('is_staff', True)
         extra_fields.setdefault('is_superuser', True)
 
@@ -47,5 +44,12 @@ class CustomUser(AbstractBaseUser, PermissionsMixin):
         return self.email
 
 class Form(models.Model):
-    name = models.CharField(max_length=255)
+    name = models.CharField(max_length=50)
     layout = models.JSONField()
+    create_at = models.ForeignKey(CustomUser, related_name='created_forms', on_delete=models.CASCADE)
+    create_date = models.DateTimeField(auto_now=True)  
+    update_at = models.ForeignKey(CustomUser, related_name='updated_forms', on_delete=models.CASCADE)
+    update_date = models.DateTimeField(auto_now=True) 
+
+    def __str__(self):
+        return self.name
