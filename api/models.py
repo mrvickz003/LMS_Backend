@@ -44,12 +44,31 @@ class CustomUser(AbstractBaseUser, PermissionsMixin):
         return self.email
 
 class Form(models.Model):
-    name = models.CharField(max_length=50)
-    layout = models.JSONField()
-    create_at = models.ForeignKey(CustomUser, related_name='created_forms', on_delete=models.CASCADE)
-    create_date = models.DateTimeField(auto_now=True)  
-    update_at = models.ForeignKey(CustomUser, related_name='updated_forms', on_delete=models.CASCADE)
-    update_date = models.DateTimeField(auto_now=True) 
+    name = models.CharField(max_length=50, blank=False, null=False)
+    layout = models.JSONField(blank=False, null=False)  # JSON layout for form fields
+    create_at = models.ForeignKey("CustomUser", on_delete=models.CASCADE, related_name="created_forms")
+    create_date = models.DateTimeField(blank=False, null=False)
+    update_at = models.ForeignKey("CustomUser", on_delete=models.CASCADE, related_name="updated_forms")
+    update_date = models.DateTimeField(blank=False, null=False)
 
     def __str__(self):
         return self.name
+
+class FormFile(models.Model):
+    file = models.FileField(upload_to='uploads/')
+    file_type = models.CharField(max_length=20)  # Store file type (image, audio, video)
+    form_submission = models.ForeignKey("FormData", on_delete=models.CASCADE, related_name='files')
+
+    def __str__(self):
+        return f"{self.file_type} file for {self.form_submission.form.name}"
+
+class FormData(models.Model):
+    form = models.ForeignKey(Form, on_delete=models.CASCADE, related_name='submissions')
+    submitted_data = models.JSONField()  # Store as a JSON field
+    create_at = models.ForeignKey("CustomUser", on_delete=models.CASCADE, related_name="created_data")
+    create_date = models.DateTimeField()
+    update_at = models.ForeignKey("CustomUser", on_delete=models.CASCADE, related_name="updated_data")
+    update_date = models.DateTimeField()
+
+    def __str__(self):
+        return f"Submission for {self.form.name}"

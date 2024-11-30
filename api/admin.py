@@ -1,7 +1,6 @@
 from django.contrib import admin
 from django.contrib.auth.admin import UserAdmin
-from api.models import CustomUser
-from api.models import Form
+from api.models import CustomUser, Form, FormData,FormFile
 
 class CustomUserAdmin(UserAdmin):
     model = CustomUser
@@ -26,3 +25,5 @@ class CustomUserAdmin(UserAdmin):
 
 admin.site.register(CustomUser, CustomUserAdmin)
 admin.site.register(Form)
+admin.site.register(FormData)
+admin.site.register(FormFile)
