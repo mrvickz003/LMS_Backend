@@ -11,6 +11,7 @@ https://docs.djangoproject.com/en/5.1/ref/settings/
 """
 
 from pathlib import Path
+from corsheaders.defaults import default_headers
 
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
 BASE_DIR = Path(__file__).resolve().parent.parent
@@ -40,7 +41,13 @@ INSTALLED_APPS = [
 
     'rest_framework',
     'rest_framework_simplejwt',
+    'corsheaders'
 ]
+
+CORS_ALLOWED_ORIGINS = [
+    "http://192.168.1.5:8888",
+]
+
 
 MIDDLEWARE = [
     'django.middleware.security.SecurityMiddleware',
@@ -50,6 +57,29 @@ MIDDLEWARE = [
     'django.contrib.auth.middleware.AuthenticationMiddleware',
     'django.contrib.messages.middleware.MessageMiddleware',
     'django.middleware.clickjacking.XFrameOptionsMiddleware',
+
+    'corsheaders.middleware.CorsMiddleware',
+    'django.middleware.common.CommonMiddleware',
+]
+
+CORS_ALLOW_ALL_ORIGINS = True
+
+CORS_ALLOW_METHODS = [
+    "GET",
+    "POST",
+    "PUT",
+    "DELETE",
+    "OPTIONS",
+]
+
+CORS_ALLOW_HEADERS = [
+    "content-type",
+    "authorization",
+]
+
+
+CORS_ALLOW_HEADERS = list(default_headers) + [
+    "spinner",
 ]
 
 ROOT_URLCONF = 'LMS_Backend.urls'
@@ -130,8 +160,12 @@ DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 
 REST_FRAMEWORK = {
     'DEFAULT_AUTHENTICATION_CLASSES': (
-        'rest_framework_simplejwt.authentication.JWTAuthentication',
+        'rest_framework.authentication.SessionAuthentication',
+        'rest_framework.authentication.BasicAuthentication',
     ),
+    'DEFAULT_PERMISSION_CLASSES': [
+        'rest_framework.permissions.IsAuthenticated',
+    ]
 }
 
 from datetime import timedelta  # noqa: E402

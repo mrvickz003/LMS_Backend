@@ -1,3 +1,4 @@
+import datetime
 from rest_framework.views import APIView
 from rest_framework.response import Response
 from rest_framework import status
@@ -10,6 +11,8 @@ from cryptography.hazmat.primitives.ciphers import Cipher, algorithms, modes
 from cryptography.hazmat.primitives.padding import PKCS7
 from cryptography.hazmat.backends import default_backend
 import os
+from rest_framework.permissions import AllowAny
+
 
 
 def encrypt_data(data, key):
@@ -104,6 +107,7 @@ def custom_authenticate(email, password):
     return None
 
 class Login(APIView):
+    permission_classes = [AllowAny]
     def post(self, request):
         try:
             email = request.data.get("email")
@@ -123,12 +127,13 @@ class Login(APIView):
                     {"error": "Invalid email or password."},
                     status=status.HTTP_401_UNAUTHORIZED,
                 )
-
+            
             # Generate JWT tokens
             refresh = RefreshToken.for_user(user)
             user_data = CustomUserSerializer(user).data
+            
             return Response(
-                {"Token": str(refresh.access_token), "user_data": user_data},
+                {"token": str(refresh.access_token), "user_data": user_data},
                 status=status.HTTP_200_OK,
             )
 

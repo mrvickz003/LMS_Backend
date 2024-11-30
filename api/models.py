@@ -41,7 +41,7 @@ class CustomUser(AbstractBaseUser, PermissionsMixin):
     REQUIRED_FIELDS = []
 
     def __str__(self):
-        return self.email
+        return f"{self.email} to {self.last_login}"
 
 class Form(models.Model):
     name = models.CharField(max_length=50, blank=False, null=False)
