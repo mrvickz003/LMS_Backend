@@ -63,6 +63,7 @@ MIDDLEWARE = [
 
 CORS_ALLOWED_ORIGINS = [
     "http://localhost:4200",
+    # "http://192.168.1.6:8888",
 ]
 
 CORS_ALLOW_ALL_ORIGINS = True
@@ -83,6 +84,10 @@ CORS_ALLOW_HEADERS = [
 
 CORS_ALLOW_HEADERS = list(default_headers) + [
     "spinner",
+]
+
+AUTHENTICATION_BACKENDS = [
+    'django.contrib.auth.backends.ModelBackend',
 ]
 
 # --------------------------
@@ -164,18 +169,19 @@ DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 # -------------------------------------------------------------------------------------------------------------------
 
 REST_FRAMEWORK = {
-    'DEFAULT_AUTHENTICATION_CLASSES': (
+    'DEFAULT_AUTHENTICATION_CLASSES': [
         'rest_framework_simplejwt.authentication.JWTAuthentication',
-    ),
+    ],
 }
+
 
 from datetime import timedelta  # noqa: E402
 
 SIMPLE_JWT = {
     'ACCESS_TOKEN_LIFETIME': timedelta(days=1),  # Token valid for 15 minutes
-    'REFRESH_TOKEN_LIFETIME': timedelta(days=1),     # Refresh token valid for 1 day
-    'ROTATE_REFRESH_TOKENS': True,                  # Issue a new refresh token with every use
-    'BLACKLIST_AFTER_ROTATION': True,               # Blacklist old refresh tokens after rotation
+    'REFRESH_TOKEN_LIFETIME': timedelta(days=1), # Refresh token valid for 1 day
+    'ROTATE_REFRESH_TOKENS': True,               # Issue a new refresh token with every use
+    'BLACKLIST_AFTER_ROTATION': True,            # Blacklist old refresh tokens after rotation
 }
 
 MEDIA_URL = '/media/'

@@ -3,8 +3,8 @@ from rest_framework.response import Response
 from rest_framework import status
 from rest_framework_simplejwt.tokens import RefreshToken
 from django.contrib.auth import get_user_model
-from django.utils.timezone import now
-from django.http import JsonResponse
+from django.contrib.auth.models import update_last_login
+from django.contrib.auth import authenticate
 from api.serializers import CustomUserSerializer
 from cryptography.hazmat.primitives.ciphers import Cipher, algorithms, modes
 from cryptography.hazmat.primitives.padding import PKCS7
@@ -106,57 +106,45 @@ def custom_authenticate(email, password):
     return None
 
 class Login(APIView):
-    permission_classes = [AllowAny]
+    permission_classes = [AllowAny]  # Allow any user to access this view
+
     def post(self, request):
-        try:
-            email = request.data.get("email")
-            password = request.data.get("password")
+        email = request.data.get('email')
+        password = request.data.get('password')
 
-            if not email or not password:
-                return Response(
-                    {"error": "Email and password are required."},
-                    status=status.HTTP_400_BAD_REQUEST,
-                )
-
-            # Custom authentication
-            user = custom_authenticate(email=email, password=password)
-            if user is None:
-                self.log_failed_attempt(email)
-                return Response(
-                    {"error": "Invalid email or password."},
-                    status=status.HTTP_401_UNAUTHORIZED,
-                )
-            
-            # Update last_login to the current time
-            user.last_login = now()
-            print(user.last_login)
-            user.save(update_fields=['last_login'])
-
-            # Generate JWT tokens
-            refresh = RefreshToken.for_user(user)
-            user_data = CustomUserSerializer(user).data
-            
+        # Validate input
+        if not email or not password:
             return Response(
-                {"token": str(refresh.access_token), "user_data": user_data},
-                status=status.HTTP_200_OK,
+                {"error": "Email and password are required."},
+                status=status.HTTP_400_BAD_REQUEST
             )
 
-        except UnicodeDecodeError as e:
-            # Return a more helpful error message
-            return JsonResponse(
-                {"error": f"Encoding error: {str(e)}"},
-                status=status.HTTP_400_BAD_REQUEST,
-            )
-        except Exception as e:
-            return JsonResponse(
-                {"error": f"Unexpected error: {str(e)}"},
-                status=status.HTTP_500_INTERNAL_SERVER_ERROR,
+        # Authenticate user
+        user = authenticate(email=email, password=password)
+        if user is None:
+            return Response(
+                {"error": "Invalid email or password."},
+                status=status.HTTP_401_UNAUTHORIZED
             )
 
-    @staticmethod
-    def log_failed_attempt(email):
-        print(f"Failed login attempt for email: {email} at {now()}")
+        # Update the user's last login time
+        update_last_login(None, user)
 
+        # Generate JWT tokens
+        refresh = RefreshToken.for_user(user)
+
+        # Serialize user data
+        user_data = CustomUserSerializer(user).data
+
+        # Return tokens and user data
+        return Response(
+            {
+                "token": str(refresh.access_token),
+                "user_data": user_data
+            },
+            status=status.HTTP_200_OK
+        )
+    
 @api_view(['GET'])
 @permission_classes([IsAuthenticated])  # Only authenticated users can access this view
 def UserDetails(request):

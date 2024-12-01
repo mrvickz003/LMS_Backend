@@ -4,10 +4,13 @@ from api.views import custom_forms, auth, custom_datas
 from rest_framework_simplejwt.views import (
     TokenRefreshView,
 )
+from rest_framework_simplejwt.views import TokenObtainPairView
 
 urlpatterns = [
     path("getToken/", auth.GetToken.as_view(), name="getToken"),
     path('token/refresh/', TokenRefreshView.as_view(), name='token_refresh'),
+    
+    path('api/token/', TokenObtainPairView.as_view(), name='token_obtain_pair'),
 
     path('login/', auth.Login.as_view(), name='login'),
     path('register/', auth.Register.as_view(), name='register'),
