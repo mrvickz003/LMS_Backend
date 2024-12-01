@@ -41,13 +41,8 @@ INSTALLED_APPS = [
 
     'rest_framework',
     'rest_framework_simplejwt',
-    'corsheaders'
+    'corsheaders',
 ]
-
-CORS_ALLOWED_ORIGINS = [
-    "http://192.168.1.5:8888",
-]
-
 
 MIDDLEWARE = [
     'django.middleware.security.SecurityMiddleware',
@@ -57,9 +52,17 @@ MIDDLEWARE = [
     'django.contrib.auth.middleware.AuthenticationMiddleware',
     'django.contrib.messages.middleware.MessageMiddleware',
     'django.middleware.clickjacking.XFrameOptionsMiddleware',
-
+    # ------
+    # Angular connection
     'corsheaders.middleware.CorsMiddleware',
     'django.middleware.common.CommonMiddleware',
+]
+
+# ----------------
+# Angular connection
+
+CORS_ALLOWED_ORIGINS = [
+    "http://localhost:4200",
 ]
 
 CORS_ALLOW_ALL_ORIGINS = True
@@ -81,6 +84,8 @@ CORS_ALLOW_HEADERS = [
 CORS_ALLOW_HEADERS = list(default_headers) + [
     "spinner",
 ]
+
+# --------------------------
 
 ROOT_URLCONF = 'LMS_Backend.urls'
 
@@ -138,7 +143,7 @@ AUTH_PASSWORD_VALIDATORS = [
 
 LANGUAGE_CODE = 'en-us'
 
-TIME_ZONE = 'UTC'
+TIME_ZONE = 'Asia/Kolkata' 
 
 USE_I18N = True
 
@@ -160,12 +165,8 @@ DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 
 REST_FRAMEWORK = {
     'DEFAULT_AUTHENTICATION_CLASSES': (
-        'rest_framework.authentication.SessionAuthentication',
-        'rest_framework.authentication.BasicAuthentication',
+        'rest_framework_simplejwt.authentication.JWTAuthentication',
     ),
-    'DEFAULT_PERMISSION_CLASSES': [
-        'rest_framework.permissions.IsAuthenticated',
-    ]
 }
 
 from datetime import timedelta  # noqa: E402

@@ -46,9 +46,9 @@ class CustomUser(AbstractBaseUser, PermissionsMixin):
 class Form(models.Model):
     name = models.CharField(max_length=50, blank=False, null=False)
     layout = models.JSONField(blank=False, null=False)  # JSON layout for form fields
-    create_at = models.ForeignKey("CustomUser", on_delete=models.CASCADE, related_name="created_forms")
+    create_by = models.ForeignKey("CustomUser", on_delete=models.CASCADE, related_name="created_forms")
     create_date = models.DateTimeField(blank=False, null=False)
-    update_at = models.ForeignKey("CustomUser", on_delete=models.CASCADE, related_name="updated_forms")
+    update_by = models.ForeignKey("CustomUser", on_delete=models.CASCADE, related_name="updated_forms")
     update_date = models.DateTimeField(blank=False, null=False)
 
     def __str__(self):
@@ -65,9 +65,9 @@ class FormFile(models.Model):
 class FormData(models.Model):
     form = models.ForeignKey(Form, on_delete=models.CASCADE, related_name='submissions')
     submitted_data = models.JSONField()  # Store as a JSON field
-    create_at = models.ForeignKey("CustomUser", on_delete=models.CASCADE, related_name="created_data")
+    create_by = models.ForeignKey("CustomUser", on_delete=models.CASCADE, related_name="created_data")
     create_date = models.DateTimeField()
-    update_at = models.ForeignKey("CustomUser", on_delete=models.CASCADE, related_name="updated_data")
+    update_by = models.ForeignKey("CustomUser", on_delete=models.CASCADE, related_name="updated_data")
     update_date = models.DateTimeField()
 
     def __str__(self):

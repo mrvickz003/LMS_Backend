@@ -1,4 +1,3 @@
-import datetime
 from rest_framework.views import APIView
 from rest_framework.response import Response
 from rest_framework import status
@@ -12,8 +11,8 @@ from cryptography.hazmat.primitives.padding import PKCS7
 from cryptography.hazmat.backends import default_backend
 import os
 from rest_framework.permissions import AllowAny
-
-
+from rest_framework.permissions import IsAuthenticated
+from rest_framework.decorators import api_view, permission_classes
 
 def encrypt_data(data, key):
     data_bytes = data.encode("utf-8")
@@ -128,6 +127,11 @@ class Login(APIView):
                     status=status.HTTP_401_UNAUTHORIZED,
                 )
             
+            # Update last_login to the current time
+            user.last_login = now()
+            print(user.last_login)
+            user.save(update_fields=['last_login'])
+
             # Generate JWT tokens
             refresh = RefreshToken.for_user(user)
             user_data = CustomUserSerializer(user).data
@@ -152,3 +156,17 @@ class Login(APIView):
     @staticmethod
     def log_failed_attempt(email):
         print(f"Failed login attempt for email: {email} at {now()}")
+
+@api_view(['GET'])
+@permission_classes([IsAuthenticated])  # Only authenticated users can access this view
+def UserDetails(request):
+    try:
+        # Use the authenticated user's details
+        user = request.user
+
+        # Serialize the user data
+        user_data = CustomUserSerializer(user).data
+        
+        return Response({"user_data": user_data}, status=200)
+    except Exception as e:
+        return Response({"error": f"An error occurred: {str(e)}"}, status=500)

@@ -1,14 +1,14 @@
 from rest_framework import serializers
 from api.models import Form, FormData, FormFile, CustomUser
-from datetime import datetime
+from django.utils.timezone import localtime
 
 
 # Custom DateTime Field for desired formatting
 class CustomDateTimeField(serializers.DateTimeField):
     def to_representation(self, value):
-        if isinstance(value, datetime):
-            return value.strftime("%d-%m-%Y %I:%M %p")  # Format: 30-11-2024 08:36 PM
-        return super().to_representation(value)
+        # Convert UTC to local timezone (IST) and format it
+        ist_time = localtime(value)
+        return ist_time.strftime("%d-%m-%Y %I:%M %p")
 
 
 class CustomUserSerializer(serializers.ModelSerializer):
@@ -18,16 +18,16 @@ class CustomUserSerializer(serializers.ModelSerializer):
         model = CustomUser
         fields = [
             "id",
-            "password",
-            "last_login",
-            "is_superuser",
-            "photo",
-            "email",
-            "mobile_number",
             "first_name",
             "last_name",
+            "email",
+            "mobile_number",
+            "photo",
+            "password",
+            "is_superuser",
             "is_active",
             "is_staff",
+            "last_login",
             "groups",
             "user_permissions",
         ]
@@ -38,9 +38,7 @@ class CustomUserSerializer(serializers.ModelSerializer):
 
 # Form Serializer
 class FormSerializer(serializers.ModelSerializer):
-    create_at = CustomDateTimeField()
     create_date = CustomDateTimeField()
-    update_at = CustomDateTimeField()
     update_date = CustomDateTimeField()
 
     class Meta:
@@ -69,9 +67,7 @@ class FormFileSerializer(serializers.ModelSerializer):
 
 # Form Data Serializer
 class FormDataSerializer(serializers.ModelSerializer):
-    create_at = CustomDateTimeField()
     create_date = CustomDateTimeField()
-    update_at = CustomDateTimeField()
     update_date = CustomDateTimeField()
     files = FormFileSerializer(many=True, read_only=True)
 
