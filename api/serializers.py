@@ -1,16 +1,14 @@
 from rest_framework import serializers
-from api.models import Form, FormData, FormFile, CustomUser
+from api.models import Form, FormData, FormFile, CustomUser, Calendar
 from django.utils.timezone import localtime
-
 
 # Custom DateTime Field for desired formatting
 class CustomDateTimeField(serializers.DateTimeField):
     def to_representation(self, value):
-        # Convert UTC to local timezone (IST) and format it
         ist_time = localtime(value)
         return ist_time.strftime("%d-%m-%Y %I:%M %p")
 
-
+# Custom user Serializer
 class CustomUserSerializer(serializers.ModelSerializer):
     last_login = CustomDateTimeField() 
     
@@ -18,6 +16,7 @@ class CustomUserSerializer(serializers.ModelSerializer):
         model = CustomUser
         fields = [
             "id",
+            "company",
             "first_name",
             "last_name",
             "email",
@@ -34,7 +33,6 @@ class CustomUserSerializer(serializers.ModelSerializer):
         extra_kwargs = {
             "password": {"write_only": True},
         }
-
 
 # Form Serializer
 class FormSerializer(serializers.ModelSerializer):
@@ -53,7 +51,6 @@ class FormSerializer(serializers.ModelSerializer):
             "update_date",
         ]
 
-
 # Form File Serializer
 class FormFileSerializer(serializers.ModelSerializer):
     class Meta:
@@ -63,7 +60,6 @@ class FormFileSerializer(serializers.ModelSerializer):
             "file", 
             "file_type"
         ]
-
 
 # Form Data Serializer
 class FormDataSerializer(serializers.ModelSerializer):
@@ -116,3 +112,31 @@ class FormDataSerializer(serializers.ModelSerializer):
             raise serializers.ValidationError(errors)
 
         return data
+
+class CalendarSerializer(serializers.ModelSerializer):
+    create_by = serializers.ReadOnlyField(source='create_by.email')  # Assuming create_by is a CustomUser and you want their email
+    update_by = serializers.ReadOnlyField(source='update_by.email')  # Similar for update_by
+    users = serializers.PrimaryKeyRelatedField(
+        many=True,
+        queryset=CustomUser.objects.all()
+    )
+
+    class Meta:
+        model = Calendar
+        fields = [
+            'id',
+            'name',
+            'description',
+            'event_type',
+            'start_time',
+            'end_time',
+            'is_all_day',
+            'location',
+            'recurrence',
+            'users',
+            'create_by',
+            'create_date',
+            'update_by',
+            'update_date',
+        ]
+        read_only_fields = ['id', 'create_date', 'update_date']
