@@ -72,3 +72,44 @@ class FormData(models.Model):
 
     def __str__(self):
         return f"Submission for {self.form.name}"
+    
+class Calendar(models.Model):
+    name = models.CharField(max_length=100, unique=True)
+    description = models.TextField(blank=True, null=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    def __str__(self):
+        return self.name
+
+class Event(models.Model):
+    RECURRING_CHOICES = [
+        ('none', 'None'),
+        ('daily', 'Daily'),
+        ('weekly', 'Weekly'),
+        ('monthly', 'Monthly'),
+        ('yearly', 'Yearly'),
+    ]
+
+    calendar = models.ForeignKey(Calendar, on_delete=models.CASCADE, related_name='events')
+    title = models.CharField(max_length=200)
+    description = models.TextField(blank=True, null=True)
+    start_time = models.DateTimeField()
+    end_time = models.DateTimeField()
+    is_all_day = models.BooleanField(default=False)
+    location = models.CharField(max_length=255, blank=True, null=True)
+    recurrence = models.CharField(max_length=10, choices=RECURRING_CHOICES, default='none')
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    def __str__(self):
+        return f"{self.title} ({self.start_time} - {self.end_time})"
+
+class Attendee(models.Model):
+    event = models.ForeignKey(Event, on_delete=models.CASCADE, related_name='attendees')
+    name = models.CharField(max_length=100)
+    email = models.EmailField()
+    phone = models.CharField(max_length=15, blank=True, null=True)
+
+    def __str__(self):
+        return self.name

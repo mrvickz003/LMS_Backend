@@ -47,9 +47,9 @@ class FormSerializer(serializers.ModelSerializer):
             "id",
             "name",
             "layout",
-            "create_at",
+            "create_by",
             "create_date",
-            "update_at",
+            "update_by",
             "update_date",
         ]
 
@@ -78,9 +78,9 @@ class FormDataSerializer(serializers.ModelSerializer):
             "form",
             "submitted_data",
             "files",
-            "create_at",
+            "create_by",
             "create_date",
-            "update_at",
+            "update_by",
             "update_date",
         ]
 
