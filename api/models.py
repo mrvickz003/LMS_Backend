@@ -36,7 +36,7 @@ class CustomUserManager(BaseUserManager):
 class CustomUser(AbstractBaseUser, PermissionsMixin):
     first_name = models.CharField(max_length=30, blank=True)
     last_name = models.CharField(max_length=30, blank=True)
-    photo = models.ImageField(height_field=None, width_field=None, max_length=None, blank=True, null=True)
+    photo = models.ImageField(height_field=None, width_field=None, max_length=None, blank=True, null=False)
     email = models.EmailField(unique=True)
     mobile_number = models.IntegerField(blank=True, null=True)
     company = models.ForeignKey(Company, on_delete=models.CASCADE, related_name="custom_user", null=True, blank=True)
@@ -86,36 +86,36 @@ class FormData(models.Model):
     
 class Calendar(models.Model):
     RECURRING_CHOICES = [
-        ('none', 'None'),
-        ('daily', 'Daily'),
-        ('weekly', 'Weekly'),
-        ('monthly', 'Monthly'),
-        ('yearly', 'Yearly'),
+        ('NONE', 'None'),
+        ('DALY', 'Daily'),
+        ('WEEK', 'Weekly'),
+        ('MONT', 'Monthly'),
+        ('YEAR', 'Yearly'),
     ] 
 
     EVENT_TYPE = [
-        ('none', 'None'),
-        ('customer_meeting', 'Customer Meeting'),
-        ('sales_call', 'Sales Call'),
-        ('follow_up', 'Follow-Up'),
-        ('product_demo', 'Product Demo'),
-        ('proposal_discussion', 'Proposal Discussion'),
-        ('contract_signing', 'Contract Signing'),
-        ('feedback_session', 'Feedback Session'),
-        ('training_session', 'Training Session'),
-        ('networking_event', 'Networking Event'),
-        ('lead_qualification_call', 'Lead Qualification Call'),
-        ('onboarding_session', 'Onboarding Session'),
-        ('campaign_launch', 'Campaign Launch'),
-        ('support_call', 'Support Call'),
-        ('customer_anniversary', 'Customer Anniversary'),
-        ('renewal_reminder', 'Renewal Reminder'),
-        ('customer_satisfaction_survey', 'Customer Satisfaction Survey'),
-        ('team_meeting', 'Team Meeting'),
-        ('goal_review', 'Goal Review'),
-        ('performance_review', 'Performance Review'),
-        ('partnership_discussion', 'Partnership Discussion'),
-        ('birthday', 'Birthday'),
+        ('NONE', 'None'),
+        ('CUSM', 'Customer Meeting'),
+        ('SCAL', 'Sales Call'),
+        ('FLUP', 'Follow-Up'),
+        ('PDEM', 'Product Demo'),
+        ('PDIS', 'Proposal Discussion'),
+        ('CSNG', 'Contract Signing'),
+        ('FSES', 'Feedback Session'),
+        ('TSES', 'Training Session'),
+        ('NEVT', 'Networking Event'),
+        ('LQCL', 'Lead Qualification Call'),
+        ('OSES', 'Onboarding Session'),
+        ('CLCH', 'Campaign Launch'),
+        ('SUCL', 'Support Call'),
+        ('CARY', 'Customer Anniversary'),
+        ('RREM', 'Renewal Reminder'),
+        ('CSSY', 'Customer Satisfaction Survey'),
+        ('TMTG', 'Team Meeting'),
+        ('GLRW', 'Goal Review'),
+        ('PERW', 'Performance Review'),
+        ('PPDN', 'Partnership Discussion'),
+        ('BDAY', 'Birthday'),
     ]
 
     company = models.ForeignKey(Company, on_delete=models.CASCADE, related_name="event", null=True, blank=True)
@@ -126,6 +126,7 @@ class Calendar(models.Model):
     end_time = models.DateTimeField()
     is_all_day = models.BooleanField(default=False)
     location = models.CharField(max_length=255, blank=True, null=True)
+    meeting_url =  models.URLField(blank=True, null=True)
     recurrence = models.CharField(max_length=10, choices=RECURRING_CHOICES, default='none')
     users = models.ManyToManyField('CustomUser', related_name='attending_events')
     create_by = models.ForeignKey("CustomUser", on_delete=models.CASCADE, related_name="created_event")

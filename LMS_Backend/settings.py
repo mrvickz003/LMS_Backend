@@ -56,7 +56,6 @@ MIDDLEWARE = [
     # ------
     # Angular connection
     'corsheaders.middleware.CorsMiddleware',
-    'django.middleware.common.CommonMiddleware',
 ]
 
 # ----------------
@@ -64,6 +63,10 @@ MIDDLEWARE = [
 
 CORS_ALLOWED_ORIGINS = [
     "http://localhost:4200",
+]
+
+CSRF_TRUSTED_ORIGINS = [
+    'http://localhost:4200',  # Add your frontend URL here
 ]
 
 CORS_ALLOW_ALL_ORIGINS = True
@@ -83,6 +86,7 @@ CORS_ALLOW_HEADERS = [
 
 
 CORS_ALLOW_HEADERS = list(default_headers) + [
+    'ngrok-skip-browser-warning',
     "Authorization",
     "spinner",
 ]

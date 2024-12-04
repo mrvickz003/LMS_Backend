@@ -1,16 +1,38 @@
+from pyexpat import model
 from rest_framework import serializers
-from api.models import Form, FormData, FormFile, CustomUser, Calendar
+from api.models import Form, FormData, FormFile, CustomUser, Calendar, Company
 from django.utils.timezone import localtime
 
-# Custom DateTime Field for desired formatting
 class CustomDateTimeField(serializers.DateTimeField):
     def to_representation(self, value):
         ist_time = localtime(value)
         return ist_time.strftime("%d-%m-%Y %I:%M %p")
 
+# Company Serializer
+class CompanySerializers(serializers.ModelSerializer):
+    create_date = CustomDateTimeField()
+    update_date = CustomDateTimeField()
+    # update_by = CustomUserSerializer(read_only=True)
+    # update_by = CustomUserSerializer(read_only=True)
+    
+    class Meta:
+        model = Company
+        fields = [
+            'id',
+            'company_name',
+            'create_by',
+            'create_date',
+            'update_by',
+            'update_date'
+        ]
+        read_only_fields = ['id', 'create_date', 'update_date']
+
+# Custom DateTime Field for desired formatting
+
 # Custom user Serializer
 class CustomUserSerializer(serializers.ModelSerializer):
     last_login = CustomDateTimeField() 
+    company = CompanySerializers(read_only=True)
     
     class Meta:
         model = CustomUser
@@ -38,6 +60,8 @@ class CustomUserSerializer(serializers.ModelSerializer):
 class FormSerializer(serializers.ModelSerializer):
     create_date = CustomDateTimeField()
     update_date = CustomDateTimeField()
+    update_by = CustomUserSerializer(read_only=True)
+    update_by = CustomUserSerializer(read_only=True)
 
     class Meta:
         model = Form
@@ -65,6 +89,8 @@ class FormFileSerializer(serializers.ModelSerializer):
 class FormDataSerializer(serializers.ModelSerializer):
     create_date = CustomDateTimeField()
     update_date = CustomDateTimeField()
+    update_by = CustomUserSerializer(read_only=True)
+    update_by = CustomUserSerializer(read_only=True)
     files = FormFileSerializer(many=True, read_only=True)
 
     class Meta:
@@ -114,17 +140,19 @@ class FormDataSerializer(serializers.ModelSerializer):
         return data
 
 class CalendarSerializer(serializers.ModelSerializer):
-    create_by = serializers.ReadOnlyField(source='create_by.email')  # Assuming create_by is a CustomUser and you want their email
-    update_by = serializers.ReadOnlyField(source='update_by.email')  # Similar for update_by
-    users = serializers.PrimaryKeyRelatedField(
-        many=True,
-        queryset=CustomUser.objects.all()
-    )
+    company = CompanySerializers(read_only=True)
+    start_time = CustomDateTimeField()
+    end_time = CustomDateTimeField()
+    create_date = CustomDateTimeField()
+    update_date = CustomDateTimeField()
+    update_by = CustomUserSerializer(read_only=True)
+    users = CustomUserSerializer(many=True, read_only=True)
 
     class Meta:
         model = Calendar
         fields = [
             'id',
+            'company',
             'name',
             'description',
             'event_type',
@@ -132,6 +160,7 @@ class CalendarSerializer(serializers.ModelSerializer):
             'end_time',
             'is_all_day',
             'location',
+            'meeting_url',
             'recurrence',
             'users',
             'create_by',
