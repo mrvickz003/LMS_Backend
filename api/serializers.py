@@ -1,4 +1,3 @@
-from pyexpat import model
 from rest_framework import serializers
 from api.models import Form, FormData, FormFile, CustomUser, Calendar, Company
 from django.utils.timezone import localtime
@@ -26,8 +25,6 @@ class CompanySerializers(serializers.ModelSerializer):
             'update_date'
         ]
         read_only_fields = ['id', 'create_date', 'update_date']
-
-# Custom DateTime Field for desired formatting
 
 # Custom user Serializer
 class CustomUserSerializer(serializers.ModelSerializer):

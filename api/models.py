@@ -125,7 +125,7 @@ class Calendar(models.Model):
     start_time = models.DateTimeField()
     end_time = models.DateTimeField()
     is_all_day = models.BooleanField(default=False)
-    location = models.CharField(max_length=255, blank=True, null=True)
+    location = models.URLField(blank=True, null=True)
     meeting_url =  models.URLField(blank=True, null=True)
     recurrence = models.CharField(max_length=10, choices=RECURRING_CHOICES, default='none')
     users = models.ManyToManyField('CustomUser', related_name='attending_events')

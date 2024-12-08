@@ -65,9 +65,9 @@ CORS_ALLOWED_ORIGINS = [
     "http://localhost:4200",
 ]
 
-CSRF_TRUSTED_ORIGINS = [
-    'http://localhost:4200',  # Add your frontend URL here
-]
+# CSRF_TRUSTED_ORIGINS = [
+#     'http://localhost:4200'
+# ]
 
 CORS_ALLOW_ALL_ORIGINS = True
 
@@ -204,3 +204,14 @@ SWAGGER_SETTINGS = {
     },
     'USE_SESSION_AUTH': False,
 }
+
+
+# Send mail
+
+EMAIL_BACKEND = "django.core.mail.backends.smtp.EmailBackend"
+EMAIL_HOST = "smtp.gmail.com"
+EMAIL_PORT = 587
+EMAIL_USE_TLS = True
+EMAIL_HOST_USER = "help.zilltech@gmail.com"
+EMAIL_HOST_PASSWORD = "wmrn pfmq tcgl rnqz"
+DEFAULT_FROM_EMAIL = "help.zilltech@gmail.com"

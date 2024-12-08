@@ -10,6 +10,7 @@ urlpatterns = [
     
     path('login', auth.user_login, name='login'),
     path('register', auth.Register.as_view(), name='register'),
+    path('verify_otp', auth.VerifyOtp.as_view(), name='verify_otp'),
 
     path('userdetails', auth.UserDetails, name='user-details'),
     
@@ -18,5 +19,7 @@ urlpatterns = [
 
     path('events', calender.get_events, name='events'),
     path('event_form', calender.event_form, name='event_form'),
-
+    path('create_event', calender.create_event, name='create_event'),
+    path('update_event', calender.update_event, name='update_event'),
+    path('delete_event', calender.delete_event, name='delete_event'),
 ]
