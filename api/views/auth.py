@@ -50,22 +50,22 @@ class GetToken(APIView):
         return Response({"token": encrypted_token}, status=status.HTTP_200_OK)
     
 """
-    def send_otp(mobile_number, otp):
-        account_sid = "ACdff04487d1bc43ef8e5cc6ae114382fd"
-        auth_token = "c6aa8244c675a479dac42b0f4d57dba7"
-        twilio_phone_number = "+17753063489" 
-
-        client = Client(account_sid, auth_token)
-        try:
-            client.messages.create(
-                body=f"Your OTP is: {otp}",
-                from_=twilio_phone_number,
-                to=f"+91{mobile_number}",
-            )
-            return True
-        except Exception as e:
-            print(f"Failed to send OTP: {e}")
-            return False
+def send_otp(mobile_number, otp):
+    account_sid = "ACdff04487d1bc43ef8e5cc6ae114382fd"
+    auth_token = "c6aa8244c675a479dac42b0f4d57dba7"
+    twilio_phone_number = "+17753063489" 
+    
+    client = Client(account_sid, auth_token)
+    try:
+        client.messages.create(
+            body=f"Your OTP is: {otp}",
+            from_=twilio_phone_number,
+            to=f"+91{mobile_number}",
+        )
+        return True
+    except Exception as e:
+        print(f"Failed to send OTP: {e}")
+        return False
 """
 
 def send_otp(mobile_number, otp):
