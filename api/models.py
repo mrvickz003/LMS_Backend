@@ -34,11 +34,11 @@ class CustomUserManager(BaseUserManager):
         return self.create_user(email, password, **extra_fields)
 
 class CustomUser(AbstractBaseUser, PermissionsMixin):
-    first_name = models.CharField(max_length=30, blank=True)
+    first_name = models.CharField(max_length=30, blank=False)
     last_name = models.CharField(max_length=30, blank=True)
     photo = models.ImageField(height_field=None, width_field=None, max_length=None, blank=True, null=False)
-    email = models.EmailField(unique=True)
-    mobile_number = models.IntegerField(blank=True, null=True)
+    email = models.EmailField(unique=True,blank=False, null=False)
+    mobile_number = models.IntegerField(blank=False, null=False,unique=True)
     company = models.ForeignKey(Company, on_delete=models.CASCADE, related_name="custom_user", null=True, blank=True)
     is_active = models.BooleanField(default=True)
     is_staff = models.BooleanField(default=False)

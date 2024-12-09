@@ -11,8 +11,9 @@ urlpatterns = [
     path('login', auth.user_login, name='login'),
     path('register', auth.Register.as_view(), name='register'),
     path('verify_otp', auth.VerifyOtp.as_view(), name='verify_otp'),
-
-    path('userdetails', auth.UserDetails, name='user-details'),
+    path('forget_password_otp', auth.forget_password_otp, name='forget_password_otp'),
+    path('forget_password_otp_verify', auth.forget_password_otp_verify, name='forget_password_otp_verify'),
+    path('change_forget_password', auth.change_forget_password, name='change_forget_password'),
     
     path('forms', custom_forms.FormView.as_view(), name='form_list_create'),
     path('datas', custom_datas.submit_form_data, name='dynamic_formdata'),
