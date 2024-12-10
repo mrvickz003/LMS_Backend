@@ -66,7 +66,7 @@ class Form(models.Model):
 
 class FormFile(models.Model):
     company = models.ForeignKey(Company, on_delete=models.CASCADE, related_name="form_files", null=True, blank=True)
-    file = models.FileField(upload_to='uploads/')
+    file = models.FileField()
     file_type = models.CharField(max_length=20)  # Store file type (image, audio, video)
     form_submission = models.ForeignKey("FormData", on_delete=models.CASCADE, related_name='files')
 

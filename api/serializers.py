@@ -1,6 +1,41 @@
 from rest_framework import serializers
 from api.models import Form, FormData, FormFile, CustomUser, Calendar, Company
 from django.utils.timezone import localtime
+import base64
+from io import BytesIO
+from django.core.files.uploadedfile import InMemoryUploadedFile
+from PIL import Image
+
+
+class Base64ImageField(serializers.ImageField):
+    def to_internal_value(self, data):
+        # Check if data is a base64 string
+        if isinstance(data, str) and data.startswith('data:image'):
+            # Extract the base64 string from the data
+            format, imgstr = data.split(';base64,')  # split into format and base64 string
+            img_data = base64.b64decode(imgstr)  # decode the base64 string into bytes
+            image = Image.open(BytesIO(img_data))  # open the image using PIL
+
+            # Save image as InMemoryUploadedFile
+            file_name = "uploaded_image.jpg"  # you can customize the filename
+            image_file = BytesIO()
+            image.save(image_file, format='JPEG')
+            image_file.seek(0)
+
+            return InMemoryUploadedFile(
+                image_file, None, file_name, 'image/jpeg', image_file.tell(), None
+            )
+        else:
+            # If it's not a base64 string, pass to the original ImageField behavior
+            return super().to_internal_value(data)
+    
+    def to_representation(self, value):
+        # Convert the image to a base64 string to be returned in the response
+        if value:
+            with open(value.path, "rb") as image_file:
+                image_data = base64.b64encode(image_file.read()).decode('utf-8')
+                return f"data:image/jpeg;base64,{image_data}"
+        return None
 
 class CustomDateTimeField(serializers.DateTimeField):
     def to_representation(self, value):
@@ -26,11 +61,10 @@ class CompanySerializers(serializers.ModelSerializer):
         ]
         read_only_fields = ['id', 'create_date', 'update_date']
 
-# Custom user Serializer
+# Usage in your serializer
 class CustomUserSerializer(serializers.ModelSerializer):
-    last_login = CustomDateTimeField() 
-    company = CompanySerializers(read_only=True)
-    
+    photo = Base64ImageField(required=False)
+
     class Meta:
         model = CustomUser
         fields = [
@@ -40,7 +74,7 @@ class CustomUserSerializer(serializers.ModelSerializer):
             "last_name",
             "email",
             "mobile_number",
-            "photo",
+            "photo",  # Use the base64 image field
             "password",
             "is_superuser",
             "is_active",

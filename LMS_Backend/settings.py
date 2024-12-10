@@ -112,7 +112,7 @@ SIMPLE_JWT = {
     'BLACKLIST_AFTER_ROTATION': True,            # Blacklist old refresh tokens after rotation
 }
 
-MEDIA_URL = '/media/'
+# MEDIA_URL = '/media/'
 MEDIA_ROOT = BASE_DIR / 'Media Uploads'
 
 # authendication
