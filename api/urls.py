@@ -14,6 +14,7 @@ urlpatterns = [
     path('forget_password_otp', auth.forget_password_otp, name='forget_password_otp'),
     path('forget_password_otp_verify', auth.forget_password_otp_verify, name='forget_password_otp_verify'),
     path('change_forget_password', auth.change_forget_password, name='change_forget_password'),
+    path('change_password', auth.change_password, name='change_password'),
     
     path('forms', custom_forms.FormView.as_view(), name='form_list_create'),
     path('datas', custom_datas.submit_form_data, name='dynamic_formdata'),

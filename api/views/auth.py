@@ -1,11 +1,12 @@
+from datetime import datetime
 from django.utils import timezone
 from rest_framework.views import APIView
 from rest_framework.response import Response
 from rest_framework import status
 from rest_framework_simplejwt.tokens import RefreshToken
-from rest_framework.decorators import api_view
+from rest_framework.decorators import api_view, permission_classes
 from api.serializers import CustomUserSerializer
-from api.models import CustomUser
+from api.models import CustomUser, Company 
 import os
 from cryptography.hazmat.primitives.ciphers import Cipher, algorithms, modes
 from cryptography.hazmat.primitives.padding import PKCS7
@@ -18,6 +19,7 @@ from twilio.rest import Client
 import random
 from django.conf import settings
 from django.template.loader import render_to_string
+from rest_framework.permissions import IsAuthenticated
 
 # Encrypt data
 def encrypt_data(data, key):
@@ -125,6 +127,7 @@ class Register(APIView):
         request.session["first_name"] = first_name
         request.session["last_name"] = last_name
         request.session["mobile_number"] = mobile_number
+        request.session["company"] = company
 
         return Response(
             {"message": "OTP sent to your mobile number. Please verify."},
@@ -140,7 +143,7 @@ class VerifyOtp(APIView):
                 status=status.HTTP_400_BAD_REQUEST,
             )
 
-        # Check OTP from the session
+        # Validate the OTP from the session
         if int(otp) != request.session.get("otp", None):
             return Response(
                 {"error": "Invalid OTP."},
@@ -153,6 +156,7 @@ class VerifyOtp(APIView):
         first_name = request.session.get("first_name")
         last_name = request.session.get("last_name")
         mobile_number = request.session.get("mobile_number")
+        company = request.session.get("company")
 
         if not email or not password:
             return Response(
@@ -166,10 +170,27 @@ class VerifyOtp(APIView):
             password=password,
             first_name=first_name,
             last_name=last_name,
-            mobile_number=mobile_number,  # Activate the user
+            mobile_number=mobile_number,
         )
 
-        # Send a welcome email
+        # Handle company association
+        try:
+            existing_company = Company.objects.get(company_name=company)
+            self.send_access_email(existing_company.owner)
+            user.company = existing_company
+        except Company.DoesNotExist:
+            new_company = Company.objects.create(
+                company_name=company,
+                owner=user,
+                create_by=user,
+                create_date=datetime.now(),
+                update_by=user,
+                update_date=datetime.now()
+            )
+            user.company = new_company
+        user.save()
+
+        # Send welcome email
         self.send_welcome_email(user)
 
         # Generate JWT tokens
@@ -183,18 +204,32 @@ class VerifyOtp(APIView):
             status=status.HTTP_201_CREATED,
         )
 
+    def send_access_email(self, user):
+        subject = "Access Granted"
+        html_message = render_to_string(
+            'send_access_email.html', {
+                'first_name': user.first_name,
+                'last_name': user.last_name,
+                'current_year': datetime.now().year,
+            }
+        )
+        from_email = "no-reply@example.com"
+        recipient_list = [user.email]
+
+        send_mail(subject, "", from_email, recipient_list, html_message=html_message)
 
     def send_welcome_email(self, user):
         subject = "Welcome to LMS"
         html_message = render_to_string(
             'welcome_mail.html', {
-            'first_name': user.first_name,
-            'last_name': user.last_name,
-            'current_year': 2024
-            })
+                'first_name': user.first_name,
+                'last_name': user.last_name,
+                'current_year': datetime.now().year,
+            }
+        )
         from_email = "no-reply@example.com"
         recipient_list = [user.email]
-        
+
         send_mail(subject, "", from_email, recipient_list, html_message=html_message)
 
 @api_view(["POST"])
@@ -234,7 +269,7 @@ def user_login(request):
     else:
         return Response(
             {"error": "Invalid ( email, mobile number ) or password."},
-            status=status.HTTP_401_UNAUTHORIZED,
+            status=status.HTTP_404_NOT_FOUND,
         )
 
 @api_view(["POST"])
@@ -399,3 +434,43 @@ def change_forget_password(request):
                 {"error": "No account associated with this mobile number."},
                 status=status.HTTP_404_NOT_FOUND,
             )        
+        
+@api_view(["POST"])
+@permission_classes([IsAuthenticated])
+def change_password(request):
+    current_password = request.data.get("currentPassword")
+    new_password = request.data.get("newPassword")
+    confirm_password = request.data.get("confirmPassword")
+
+    # Validate input
+    if not current_password or not new_password or not confirm_password:
+        return Response(
+            {"error": "All fields (currentPassword, newPassword, confirmPassword) are required."},
+            status=status.HTTP_400_BAD_REQUEST,
+        )
+
+    # Check if the current password is correct
+    user = request.user
+    if not user.check_password(current_password):
+        return Response(
+            {"error": "Current password is incorrect."},
+            status=status.HTTP_400_BAD_REQUEST,
+        )
+
+    # Check if the new password and confirm password match
+    if new_password != confirm_password:
+        return Response(
+            {"error": "New password and confirm password do not match."},
+            status=status.HTTP_400_BAD_REQUEST,
+        )
+
+    # Update the user's password
+    user.set_password(new_password)
+    user.save()
+
+    return Response(
+        {"message": "Password changed successfully."},
+        status=status.HTTP_200_OK,
+    )
+
+

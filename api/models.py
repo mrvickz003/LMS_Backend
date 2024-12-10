@@ -3,7 +3,8 @@ from django.contrib.auth.models import AbstractBaseUser, BaseUserManager, Permis
 from django.utils.translation import gettext_lazy as GL
 
 class Company(models.Model):
-    company_name = models.CharField(max_length=30, blank=False, null=False)
+    company_name = models.CharField(max_length=30, blank=False, null=False, unique=True)
+    owner = models.ForeignKey("CustomUser", on_delete=models.CASCADE, related_name="ownerOfCompany")
     create_by = models.ForeignKey("CustomUser", on_delete=models.CASCADE, related_name="created_company")
     create_date = models.DateTimeField(blank=False, null=False)
     update_by = models.ForeignKey("CustomUser", on_delete=models.CASCADE, related_name="updated_company")
@@ -39,7 +40,7 @@ class CustomUser(AbstractBaseUser, PermissionsMixin):
     photo = models.ImageField(height_field=None, width_field=None, max_length=None, blank=True, null=False)
     email = models.EmailField(unique=True,blank=False, null=False)
     mobile_number = models.IntegerField(blank=False, null=False,unique=True)
-    company = models.ForeignKey(Company, on_delete=models.CASCADE, related_name="custom_user", null=True, blank=True)
+    company = models.ForeignKey(Company, on_delete=models.SET_NULL, related_name="custom_user", null=True, blank=True)
     is_active = models.BooleanField(default=True)
     is_staff = models.BooleanField(default=False)
     
