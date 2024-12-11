@@ -1,6 +1,6 @@
 # urls.py
 from django.urls import path
-from api.views import custom_forms, auth, custom_datas, calender, common
+from api.views import custom_forms, auth, custom_datas, calender, common, testing
 from rest_framework_simplejwt.views import TokenRefreshView
 
 
@@ -10,6 +10,7 @@ urlpatterns = [
     
     path('login', auth.user_login, name='login'),
     path('register', auth.Register.as_view(), name='register'),
+    path('test_register', testing.test_register, name='test_register'), 
     path('verify_otp', auth.VerifyOtp.as_view(), name='verify_otp'),
     path('forget_password_otp', auth.forget_password_otp, name='forget_password_otp'),
     path('forget_password_otp_verify', auth.forget_password_otp_verify, name='forget_password_otp_verify'),
