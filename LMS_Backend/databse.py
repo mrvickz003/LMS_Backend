@@ -6,9 +6,9 @@ DATABASES = {
     'default': {
         'ENGINE': 'django.db.backends.mysql',
         'NAME': 'zilltech_database',
-        'USER': 'root',
-        'PASSWORD': 'root',
-        'HOST':'localhost',
+        'USER': 'Zilltech',
+        'PASSWORD': '6369706554@#!',
+        'HOST':'Zilltech.mysql.pythonanywhere-services.com',
         'PORT':'3306',
     }
 }
