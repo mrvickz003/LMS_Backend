@@ -46,7 +46,7 @@ def decrypt_data(encrypted_data, key):
 
 def send_otp(mobile_number, otp):
     account_sid = "ACdff04487d1bc43ef8e5cc6ae114382fd"
-    auth_token = "c6aa8244c675a479dac42b0f4d57dba7"
+    auth_token = "c0333460dbcf9be80d152c62ebcb4606"
     twilio_phone_number = "+17753063489" 
     
     client = Client(account_sid, auth_token)
