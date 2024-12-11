@@ -1,4 +1,3 @@
-from datetime import datetime
 from django.utils import timezone
 from rest_framework.views import APIView
 from rest_framework.response import Response
@@ -7,73 +6,14 @@ from rest_framework_simplejwt.tokens import RefreshToken
 from rest_framework.decorators import api_view, permission_classes
 from api.serializers import CustomUserSerializer
 from api.models import CustomUser, Company 
-import os
-from cryptography.hazmat.primitives.ciphers import Cipher, algorithms, modes
-from cryptography.hazmat.primitives.padding import PKCS7
-from cryptography.hazmat.backends import default_backend
-import base64
 from django.core.validators import validate_email
 from django.core.exceptions import ValidationError
 from django.core.mail import send_mail
-from twilio.rest import Client
 import random
-from django.conf import settings
-from django.template.loader import render_to_string
 from rest_framework.permissions import IsAuthenticated
+from api.views.common import send_otp, send_access_email, send_welcome_email
 
-# Encrypt data
-def encrypt_data(data, key):
-    data_bytes = data.encode("utf-8")
-    iv = os.urandom(16)  # Secure random IV
-    cipher = Cipher(algorithms.AES(key), modes.CBC(iv), backend=default_backend())
-    encryptor = cipher.encryptor()
-    padder = PKCS7(algorithms.AES.block_size).padder()
-    padded_data = padder.update(data_bytes) + padder.finalize()
-    encrypted_data = encryptor.update(padded_data) + encryptor.finalize()
-    return base64.b64encode(iv + encrypted_data).decode("utf-8")
-
-# Decrypt data
-def decrypt_data(encrypted_data, key):
-    encrypted_data_bytes = base64.b64decode(encrypted_data)
-    iv = encrypted_data_bytes[:16]
-    cipher = Cipher(algorithms.AES(key), modes.CBC(iv), backend=default_backend())
-    decryptor = cipher.decryptor()
-    padded_data = decryptor.update(encrypted_data_bytes[16:]) + decryptor.finalize()
-    unpadder = PKCS7(algorithms.AES.block_size).unpadder()
-    data = unpadder.update(padded_data) + unpadder.finalize()
-    return data.decode("utf-8")
-
-# API to get a secure random token
-class GetToken(APIView):
-    def get(self, request):
-        key = os.urandom(32)
-        random_token = os.urandom(16).hex()
-        encrypted_token = encrypt_data(random_token, key)
-        return Response({"token": encrypted_token}, status=status.HTTP_200_OK)
-    
-"""
-def send_otp(mobile_number, otp):
-    account_sid = "ACdff04487d1bc43ef8e5cc6ae114382fd"
-    auth_token = "c6aa8244c675a479dac42b0f4d57dba7"
-    twilio_phone_number = "+17753063489" 
-    
-    client = Client(account_sid, auth_token)
-    try:
-        client.messages.create(
-            body=f"Your OTP is: {otp}",
-            from_=twilio_phone_number,
-            to=f"+91{mobile_number}",
-        )
-        return True
-    except Exception as e:
-        print(f"Failed to send OTP: {e}")
-        return False
-"""
-
-def send_otp(mobile_number, otp):
-        print(f"Sending OTP {otp} to {mobile_number}")
-        return True
- 
+# Create new user module 
 class Register(APIView):
     def post(self, request):
         company = request.data.get("company")
@@ -133,7 +73,8 @@ class Register(APIView):
             {"message": "OTP sent to your mobile number. Please verify."},
             status=status.HTTP_200_OK,
         )
-   
+
+# verify new user module   
 class VerifyOtp(APIView):
     def post(self, request):
         otp = request.data.get("otp")
@@ -176,22 +117,22 @@ class VerifyOtp(APIView):
         # Handle company association
         try:
             existing_company = Company.objects.get(company_name=company)
-            self.send_access_email(existing_company.owner)
+            send_access_email(existing_company.owner)
             user.company = existing_company
         except Company.DoesNotExist:
             new_company = Company.objects.create(
                 company_name=company,
                 owner=user,
                 create_by=user,
-                create_date=datetime.now(),
+                create_date=timezone.now(),
                 update_by=user,
-                update_date=datetime.now()
+                update_date=timezone.now()
             )
             user.company = new_company
         user.save()
 
         # Send welcome email
-        self.send_welcome_email(user)
+        send_welcome_email(user)
 
         # Generate JWT tokens
         refresh = RefreshToken.for_user(user)
@@ -204,34 +145,7 @@ class VerifyOtp(APIView):
             status=status.HTTP_201_CREATED,
         )
 
-    def send_access_email(self, user):
-        subject = "Access Granted"
-        html_message = render_to_string(
-            'send_access_email.html', {
-                'first_name': user.first_name,
-                'last_name': user.last_name,
-                'current_year': datetime.now().year,
-            }
-        )
-        from_email = "no-reply@example.com"
-        recipient_list = [user.email]
-
-        send_mail(subject, "", from_email, recipient_list, html_message=html_message)
-
-    def send_welcome_email(self, user):
-        subject = "Welcome to LMS"
-        html_message = render_to_string(
-            'welcome_mail.html', {
-                'first_name': user.first_name,
-                'last_name': user.last_name,
-                'current_year': datetime.now().year,
-            }
-        )
-        from_email = "no-reply@example.com"
-        recipient_list = [user.email]
-
-        send_mail(subject, "", from_email, recipient_list, html_message=html_message)
-
+# Login user 
 @api_view(["POST"])
 def user_login(request):
     identifier = request.data.get("email")  # This can be email or mobile number
@@ -342,7 +256,6 @@ def forget_password_otp_verify(request):
             status=status.HTTP_400_BAD_REQUEST,
         )
 
-    # Check if identifier is email or mobile number
     try:
         validate_email(identifier)
         is_email = True
@@ -396,14 +309,12 @@ def change_forget_password(request):
             status=status.HTTP_400_BAD_REQUEST,
         )
 
-    # Check if identifier is email
     try:
         validate_email(identifier)
         is_email = True
     except ValidationError:
         is_email = False
 
-    # Email-based password reset
     if is_email:
         user = CustomUser.objects.filter(email=identifier).first()
         if user:
@@ -419,7 +330,6 @@ def change_forget_password(request):
                 status=status.HTTP_404_NOT_FOUND,
             )
 
-    # Mobile number-based password reset
     else:
         user = CustomUser.objects.filter(mobile_number=identifier).first()
         if user:
@@ -442,14 +352,12 @@ def change_password(request):
     new_password = request.data.get("newPassword")
     confirm_password = request.data.get("confirmPassword")
 
-    # Validate input
     if not current_password or not new_password or not confirm_password:
         return Response(
             {"error": "All fields (currentPassword, newPassword, confirmPassword) are required."},
             status=status.HTTP_400_BAD_REQUEST,
         )
 
-    # Check if the current password is correct
     user = request.user
     if not user.check_password(current_password):
         return Response(
@@ -457,14 +365,12 @@ def change_password(request):
             status=status.HTTP_400_BAD_REQUEST,
         )
 
-    # Check if the new password and confirm password match
     if new_password != confirm_password:
         return Response(
             {"error": "New password and confirm password do not match."},
             status=status.HTTP_400_BAD_REQUEST,
         )
 
-    # Update the user's password
     user.set_password(new_password)
     user.save()
 
@@ -472,5 +378,3 @@ def change_password(request):
         {"message": "Password changed successfully."},
         status=status.HTTP_200_OK,
     )
-
-

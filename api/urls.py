@@ -1,11 +1,11 @@
 # urls.py
 from django.urls import path
-from api.views import custom_forms, auth, custom_datas, calender
+from api.views import custom_forms, auth, custom_datas, calender, common
 from rest_framework_simplejwt.views import TokenRefreshView
 
 
 urlpatterns = [
-    path("getToken", auth.GetToken.as_view(), name="getToken"),
+    path("getToken", common.GetToken.as_view(), name="getToken"),
     path('token/refresh', TokenRefreshView.as_view(), name='token_refresh'),
     
     path('login', auth.user_login, name='login'),
