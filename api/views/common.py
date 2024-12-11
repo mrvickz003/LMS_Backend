@@ -43,7 +43,7 @@ def decrypt_data(encrypted_data, key):
     return data.decode("utf-8")
 
 # Send realtime mobile otp 
-"""
+
 def send_otp(mobile_number, otp):
     account_sid = "ACdff04487d1bc43ef8e5cc6ae114382fd"
     auth_token = "c6aa8244c675a479dac42b0f4d57dba7"
@@ -61,12 +61,11 @@ def send_otp(mobile_number, otp):
         print(f"Failed to send OTP: {e}")
         return False
 """
-
 # Send mobile otp for terminal
 def send_otp(mobile_number, otp):
         print(f"Sending OTP {otp} to {mobile_number}")
         return True
-
+"""
 # Send Access mail for company owner 
 def send_access_email(user):
     subject = "Access Granted"
