@@ -1,95 +1,104 @@
-from rest_framework.views import APIView
-from rest_framework.response import Response
-from rest_framework import status
-from django.utils import timezone
 import os
-from cryptography.hazmat.primitives.ciphers import Cipher, algorithms, modes
-from cryptography.hazmat.primitives.padding import PKCS7
-from cryptography.hazmat.backends import default_backend
-import base64
-from django.conf import settings
+import random
+from django.utils import timezone
 from twilio.rest import Client
 from django.template.loader import render_to_string
 from django.core.mail import send_mail
+from api.models import OTP
+from datetime import timedelta
+from api.protos import otp_pb2_grpc, otp_pb2
+from django.utils.timezone import now
+from django.conf import settings
 
-# API to get a secure random token
-class GetToken(APIView):
-    def get(self, request):
-        key = os.urandom(32)
-        random_token = os.urandom(16).hex()
-        encrypted_token = encrypt_data(random_token, key)
-        return Response({"token": encrypted_token}, status=status.HTTP_200_OK)
+# Ensure that your Twilio credentials are securely retrieved from environment variables
+TWILIO_ACCOUNT_SID = os.getenv("TWILIO_ACCOUNT_SID", "ACdff04487d1bc43ef8e5cc6ae114382fd")
+TWILIO_AUTH_TOKEN = os.getenv("TWILIO_AUTH_TOKEN", "c0333460dbcf9be80d152c62ebcb4606")
+TWILIO_PHONE_NUMBER = os.getenv("TWILIO_PHONE_NUMBER", "+17753063489")  # Replace with your Twilio number
 
-# Encrypt data
-def encrypt_data(data, key):
-    data_bytes = data.encode("utf-8")
-    iv = os.urandom(16)  # Secure random IV
-    cipher = Cipher(algorithms.AES(key), modes.CBC(iv), backend=default_backend())
-    encryptor = cipher.encryptor()
-    padder = PKCS7(algorithms.AES.block_size).padder()
-    padded_data = padder.update(data_bytes) + padder.finalize()
-    encrypted_data = encryptor.update(padded_data) + encryptor.finalize()
-    return base64.b64encode(iv + encrypted_data).decode("utf-8")
+# Initialize the Twilio client
+client = Client(TWILIO_ACCOUNT_SID, TWILIO_AUTH_TOKEN)
 
-# Decrypt data
-def decrypt_data(encrypted_data, key):
-    encrypted_data_bytes = base64.b64decode(encrypted_data)
-    iv = encrypted_data_bytes[:16]
-    cipher = Cipher(algorithms.AES(key), modes.CBC(iv), backend=default_backend())
-    decryptor = cipher.decryptor()
-    padded_data = decryptor.update(encrypted_data_bytes[16:]) + decryptor.finalize()
-    unpadder = PKCS7(algorithms.AES.block_size).unpadder()
-    data = unpadder.update(padded_data) + unpadder.finalize()
-    return data.decode("utf-8")
-
-# Send realtime mobile otp 
-
-def send_otp(mobile_number, otp):
-    account_sid = "ACdff04487d1bc43ef8e5cc6ae114382fd"
-    auth_token = "c0333460dbcf9be80d152c62ebcb4606"
-    twilio_phone_number = "+17753063489" 
-    
-    client = Client(account_sid, auth_token)
-    try:
-        client.messages.create(
-            body=f"Your OTP is: {otp}",
-            from_=twilio_phone_number,
-            to=f"+91{mobile_number}",
+class OTPService(otp_pb2_grpc.OTPServiceServicer):
+    def SendOTP(self, request, context):
+        # Validate input
+        mobile_number = request.mobile_number
+        if not mobile_number:
+            return otp_pb2.SendOTPResponse(success=False, message="Mobile number is required.")
+        
+        otp = random.randint(100000, 999999)  # Generate a 6-digit OTP
+        
+        # Save OTP to the database with an expiry time of 5 minutes
+        OTP.objects.create(
+            mobile_number=mobile_number,
+            otp=otp,
+            expires_at=now() + timedelta(minutes=5)  # OTP expires in 5 minutes
         )
-        return True
-    except Exception as e:
-        print(f"Failed to send OTP: {e}")
-        return False
-"""
-# Send mobile otp for terminal
-def send_otp(mobile_number, otp):
-        print(f"Sending OTP {otp} to {mobile_number}")
-        return True
-"""
-# Send Access mail for company owner 
-def send_access_email(user):
-    subject = "Access Granted"
-    html_message = render_to_string(
-        'send_access_email.html', {
-            'first_name': user.first_name,
-            'last_name': user.last_name,
-            'current_year': timezone.now().year,
-        }
-    )
-    from_email = "no-reply@example.com"
-    recipient_list = [user.email]
-    send_mail(subject, "", from_email, recipient_list, html_message=html_message)
 
-# Send welcome mail for new user 
+        try:
+            # Send the OTP via Twilio SMS
+            client.messages.create(
+                body=f"Your OTP is: {otp}",
+                from_=TWILIO_PHONE_NUMBER,
+                to=f"+91{mobile_number}",  # Assuming the mobile number is an Indian number
+            )
+            return otp_pb2.SendOTPResponse(success=True, message="OTP sent successfully.")
+        except Exception as e:
+            # Handle errors in sending OTP
+            return otp_pb2.SendOTPResponse(success=False, message=f"Failed to send OTP: {str(e)}")
+
+    def VerifyOTP(self, request, context):
+        mobile_number = request.mobile_number
+        otp = request.otp
+
+        # Query the database for the OTP entry
+        otp_entry = OTP.objects.filter(
+            mobile_number=mobile_number,
+            otp=otp,
+            is_verified=False,
+            expires_at__gt=now()
+        ).first()
+
+        if not otp_entry:
+            return otp_pb2.VerifyOTPResponse(success=False, message="Invalid OTP or OTP has expired.")
+
+        # Mark the OTP as verified
+        otp_entry.is_verified = True
+        otp_entry.save()
+
+        return otp_pb2.VerifyOTPResponse(success=True, message="OTP verified successfully.")
+
+# Send Access email for company owner
+def send_access_email(user):
+    try:
+        subject = "Access Granted"
+        html_message = render_to_string(
+            'send_access_email.html', {
+                'first_name': user.first_name,
+                'last_name': user.last_name,
+                'current_year': timezone.now().year,
+            }
+        )
+        from_email = "no-reply@example.com"
+        recipient_list = [user.email]
+        send_mail(subject, "", from_email, recipient_list, html_message=html_message)
+    except Exception as e:
+        # Log the exception or handle appropriately
+        print(f"Error sending access email: {str(e)}")
+
+# Send welcome email for new user
 def send_welcome_email(user):
-    subject = "Welcome to LMS"
-    html_message = render_to_string(
-        'welcome_mail.html', {
-            'first_name': user.first_name,
-            'last_name': user.last_name,
-            'current_year': timezone.now().year,
-        }
-    )
-    from_email = "no-reply@example.com"
-    recipient_list = [user.email]
-    send_mail(subject, "", from_email, recipient_list, html_message=html_message)
+    try:
+        subject = "Welcome to LMS"
+        html_message = render_to_string(
+            'welcome_mail.html', {
+                'first_name': user.first_name,
+                'last_name': user.last_name,
+                'current_year': timezone.now().year,
+            }
+        )
+        from_email = "no-reply@example.com"
+        recipient_list = [user.email]
+        send_mail(subject, "", from_email, recipient_list, html_message=html_message)
+    except Exception as e:
+        # Log the exception or handle appropriately
+        print(f"Error sending welcome email: {str(e)}")

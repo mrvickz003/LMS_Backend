@@ -9,9 +9,9 @@ urlpatterns = [
     path('token/refresh', TokenRefreshView.as_view(), name='token_refresh'),
     
     path('login', auth.user_login, name='login'),
-    path('register', auth.Register.as_view(), name='register'),
+    path('register', auth.register, name='register'),
     path('test_register', testing.test_register, name='test_register'), 
-    path('verify_otp', auth.VerifyOtp.as_view(), name='verify_otp'),
+    path('account_verify', auth.account_verify, name='account_verify'),
     path('forget_password_otp', auth.forget_password_otp, name='forget_password_otp'),
     path('forget_password_otp_verify', auth.forget_password_otp_verify, name='forget_password_otp_verify'),
     path('change_forget_password', auth.change_forget_password, name='change_forget_password'),

@@ -1,6 +1,6 @@
 from django.contrib import admin
 from django.contrib.auth.admin import UserAdmin
-from api.models import CustomUser, Form, FormData,FormFile, Calendar, Company
+from api.models import CustomUser, Form, FormData,FormFile, Calendar, Company, OTP
 
 class CustomUserAdmin(UserAdmin):
     model = CustomUser
@@ -29,3 +29,4 @@ admin.site.register(FormData)
 admin.site.register(FormFile)
 admin.site.register(Calendar)
 admin.site.register(Company)
+admin.site.register(OTP)

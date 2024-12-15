@@ -1,7 +1,22 @@
 from django.db import models
 from django.contrib.auth.models import AbstractBaseUser, BaseUserManager, PermissionsMixin
 from django.utils.translation import gettext_lazy as GL
+from django.utils.timezone import now
+from datetime import timedelta
 
+def default_expiry():
+    return now() + timedelta(minutes=5)
+
+class OTP(models.Model):
+    mobile_number = models.CharField(max_length=15, unique=True)
+    otp = models.CharField(max_length=6)
+    created_at = models.DateTimeField(auto_now_add=True)
+    expires_at = models.DateTimeField(default=default_expiry)
+    is_verified = models.BooleanField(default=False)
+
+    def __str__(self):
+        return f"{self.mobile_number} - {self.otp}"
+    
 class Company(models.Model):
     company_name = models.CharField(max_length=30, blank=False, null=False, unique=True)
     owner = models.ForeignKey("CustomUser", on_delete=models.CASCADE, related_name="ownerOfCompany")

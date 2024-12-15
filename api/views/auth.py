@@ -1,150 +1,133 @@
 from django.utils import timezone
-from rest_framework.views import APIView
 from rest_framework.response import Response
 from rest_framework import status
 from rest_framework_simplejwt.tokens import RefreshToken
 from rest_framework.decorators import api_view, permission_classes
 from api.serializers import CustomUserSerializer
 from api.models import CustomUser, Company 
+from api.views.common import OTPService
 from django.core.validators import validate_email
 from django.core.exceptions import ValidationError
 from django.core.mail import send_mail
 import random
 from rest_framework.permissions import IsAuthenticated
-from api.views.common import send_otp, send_access_email, send_welcome_email
 
 # Create new user module 
-class Register(APIView):
-    def post(self, request):
-        company = request.data.get("company")
-        email = request.data.get("email")
-        password = request.data.get("password")
-        first_name = request.data.get("first_name")
-        last_name = request.data.get("last_name", "")
-        mobile_number = request.data.get("mobile_number")
-
-        if (
-            not company
-            or not first_name
-            or not email
-            or not password
-            or not mobile_number
-        ):
-            return Response(
-                {
-                    "error": "Company, First name, Email, password, and mobile number are required."
-                },
-                status=status.HTTP_400_BAD_REQUEST,
-            )
-
-        if CustomUser.objects.filter(email=email).exists():
-            return Response(
-                {"error": "A user with this email already exists."},
-                status=status.HTTP_400_BAD_REQUEST,
-            )
-        
-        if CustomUser.objects.filter(mobile_number=mobile_number).exists():
-            return Response(
-                {"error": "A user with this mobile number already exists."},
-                status=status.HTTP_400_BAD_REQUEST,
-            )
-
-        # Generate a 6-digit OTP
-        otp = random.randint(100000, 999999)
-
-        # Send the OTP to the mobile number (using a placeholder function)
-        # Replace this with an actual SMS service like Twilio
-        if not send_otp(mobile_number, otp):
-            return Response(
-                {"error": "Failed to send OTP."},
-                status=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            )
-
-        # Temporarily store the OTP and user details (use a more secure method in production)
-        request.session["otp"] = otp
-        request.session["email"] = email
-        request.session["password"] = password
-        request.session["first_name"] = first_name
-        request.session["last_name"] = last_name
-        request.session["mobile_number"] = mobile_number
-        request.session["company"] = company
-
+@api_view(["POST"])
+def register(request):
+    company = request.data.get("company")
+    email = request.data.get("email")
+    password = request.data.get("password")
+    first_name = request.data.get("first_name")
+    last_name = request.data.get("last_name", "")
+    mobile_number = request.data.get("mobile_number")
+    if (
+        not company
+        or not first_name
+        or not email
+        or not password
+        or not mobile_number
+    ):
         return Response(
-            {"message": "OTP sent to your mobile number. Please verify."},
-            status=status.HTTP_200_OK,
+            {
+                "error": "Company, First name, Email, password, and mobile number are required."
+            },
+            status=status.HTTP_400_BAD_REQUEST,
+        )
+    if CustomUser.objects.filter(email=email).exists():
+        return Response(
+            {"error": "A user with this email already exists."},
+            status=status.HTTP_400_BAD_REQUEST,
+        )
+    
+    if CustomUser.objects.filter(mobile_number=mobile_number).exists():
+        return Response(
+            {"error": "A user with this mobile number already exists."},
+            status=status.HTTP_400_BAD_REQUEST,
+        )
+    if not OTPService.SendOTP(mobile_number):
+        return Response(
+            {"error": "Failed to send OTP."},
+            status=status.HTTP_500_INTERNAL_SERVER_ERROR,
+        )
+    # Temporarily store the OTP and user details (use a more secure method in production)
+
+    request.session["email"] = email
+    request.session["password"] = password
+    request.session["first_name"] = first_name
+    request.session["last_name"] = last_name
+    request.session["mobile_number"] = mobile_number
+    request.session["company"] = company
+    return Response(
+        {"message": "OTP sent to your mobile number. Please verify."},
+        status=status.HTTP_200_OK,
+    )
+
+@api_view(["POST"])
+def account_verify(request):
+    otp = request.data.get("otp")
+
+    if not otp:
+        return Response(
+            {"error": "OTP is required for verification."},
+            status=status.HTTP_400_BAD_REQUEST,
         )
 
-# verify new user module   
-class VerifyOtp(APIView):
-    def post(self, request):
-        otp = request.data.get("otp")
-        if not otp:
-            return Response(
-                {"error": "OTP is required."},
-                status=status.HTTP_400_BAD_REQUEST,
-            )
+    # Retrieve stored data from the session
+    email = request.session.get("email")
+    password = request.session.get("password")
+    first_name = request.session.get("first_name")
+    last_name = request.session.get("last_name")
+    mobile_number = request.session.get("mobile_number")
+    company_name = request.session.get("company")
 
-        # Validate the OTP from the session
-        if int(otp) != request.session.get("otp", None):
-            return Response(
-                {"error": "Invalid OTP."},
-                status=status.HTTP_400_BAD_REQUEST,
-            )
+    if not email or not mobile_number:
+        return Response(
+            {"error": "No pending registration found. Please register again."},
+            status=status.HTTP_400_BAD_REQUEST,
+        )
 
-        # Retrieve user details from the session
-        email = request.session.get("email")
-        password = request.session.get("password")
-        first_name = request.session.get("first_name")
-        last_name = request.session.get("last_name")
-        mobile_number = request.session.get("mobile_number")
-        company = request.session.get("company")
+    # Validate OTP (replace this logic with your OTP verification mechanism)
+    if not OTPService.VerifyOTP(mobile_number, otp):
+        return Response(
+            {"error": "Invalid OTP. Please try again."},
+            status=status.HTTP_400_BAD_REQUEST,
+        )
 
-        if not email or not password:
-            return Response(
-                {"error": "Session expired. Please register again."},
-                status=status.HTTP_400_BAD_REQUEST,
-            )
+    # Create a new user if OTP verification is successful
+    try:
+        # Ensure the company exists or create a new one
+        company, created = Company.objects.get_or_create(name=company_name)
 
-        # Create the user and activate them
-        user = CustomUser.objects.create_user(
+        # Create the user
+        CustomUser.objects.create_user(
             email=email,
             password=password,
             first_name=first_name,
             last_name=last_name,
             mobile_number=mobile_number,
+            company=company,
         )
 
-        # Handle company association
-        try:
-            existing_company = Company.objects.get(company_name=company)
-            send_access_email(existing_company.owner)
-            user.company = existing_company
-        except Company.DoesNotExist:
-            new_company = Company.objects.create(
-                company_name=company,
-                owner=user,
-                create_by=user,
-                create_date=timezone.now(),
-                update_by=user,
-                update_date=timezone.now()
-            )
-            user.company = new_company
-        user.save()
-
         # Send welcome email
-        send_welcome_email(user)
+        # send_welcome_email(email)
 
-        # Generate JWT tokens
-        refresh = RefreshToken.for_user(user)
+        # Clear session data after successful registration
+        for key in ["email", "password", "first_name", "last_name", "mobile_number", "company"]:
+            request.session.pop(key, None)
+
+        # Return success response
         return Response(
-            {
-                "message": "User verified and registered successfully.",
-                "refresh": str(refresh),
-                "access": str(refresh.access_token),
-            },
+            {"message": "Account successfully created."},
             status=status.HTTP_201_CREATED,
         )
 
+    except Exception as e:
+        return Response(
+            {"error": f"An error occurred: {str(e)}"},
+            status=status.HTTP_500_INTERNAL_SERVER_ERROR,
+        )
+    
 # Login user 
 @api_view(["POST"])
 def user_login(request):

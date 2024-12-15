@@ -1,0 +1,26 @@
+syntax = "proto3";
+
+service OTPService {
+    rpc GenerateOTP (OTPRequest) returns (OTPResponse);
+    rpc ValidateOTP (OTPValidationRequest) returns (OTPValidationResponse);
+}
+
+message OTPRequest {
+    string user_id = 1;
+    int32 length = 2;
+}
+
+message OTPResponse {
+    string otp = 1;
+    string expiry_time = 2;
+}
+
+message OTPValidationRequest {
+    string user_id = 1;
+    string otp = 2;
+}
+
+message OTPValidationResponse {
+    bool valid = 1;
+    string message = 2;
+}
